@@ -1,1 +1,1 @@
-# Text-Mining-Task
+# NovayaGazetaResearch
