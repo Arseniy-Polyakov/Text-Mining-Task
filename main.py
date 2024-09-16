@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import spacy 
 nlp = spacy.load("ru_core_news_md")
+from textblob import TextBlob
 
 from autocorrect import spell
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -21,6 +22,7 @@ segmenter = Segmenter()
 morph_vocab = MorphVocab()
 morph_tagger = NewsMorphTagger(emb)
 ner_tagger = NewsNERTagger(emb)
+
 
 from dash import Dash, html, dcc, Input, Output
 import plotly.express as px 
@@ -48,6 +50,9 @@ with open("final.txt", "rt", encoding="utf-8") as file:
 
 with open("stopwords.txt", "rt", encoding="utf-8") as file:
     stop_words = file.read().split()
+
+with open("NovayaGazetaEnglish.txt", "rt", encoding="utf-8") as file:
+    english_text = file.read()
 
 # Removing from Punctuation Marks
 text_without_punct = re.sub(r"[^\w\n\- ]", "", text_str)
@@ -232,6 +237,10 @@ frequent_entities_matrix = [[" ", "Personal Names", "Organizations", "Locations"
                    ["Final", frequent_entities_per_final, frequent_entities_org_final, frequent_entities_loc_final]] 
                 #    [" ", " ".join(frequent_entities_per_final[3:]), " ".join(frequent_entities_org_final[3:]), " ".join(frequent_entities_loc_final[3:])]]
 
+# Sentiment Analysis 
+english_texts = nltk.sent_tokenize(english_text)
+sentiment_analysis = list([TextBlob(item).sentiment.polarity for item in english_texts])
+sentiment = [[i for i in range(len(sentiment_analysis))], sentiment_analysis]
 
 # Dash Visualization
 app = Dash(__name__)
@@ -278,6 +287,8 @@ fig.update_layout(barmode="group")
 
 fig_ner = ff.create_table(ner_statistics)
 
+fig_sentiment = go.Figure(data=[go.Scatter(x=sentiment[0], y=sentiment[1])])
+
 # Dash Interpretation
 app.layout = html.Div(children=[
     html.H1(children="Descriptive Statistics and Result of Data Mining and Feature Extraction Based on the Alexey Tarasov's Article"),
@@ -310,7 +321,12 @@ app.layout = html.Div(children=[
     html.H3(children="Named Entities in Different Text Parts"),
 
     dcc.Graph(id="ner", 
-              figure=fig_ner)])
+              figure=fig_ner), 
+    
+    html.H3(children="Sentiment Analysis (from Intro to Final)"),
+
+    dcc.Graph(id="Sentiment", 
+              figure=fig_sentiment)])
 
 if __name__ == '__main__':
     app.run(debug=True)
